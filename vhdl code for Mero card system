@@ -1,0 +1,55 @@
+localparam IDLE           = 3'b000;
+localparam CARD_SWIPE      = 3'b001;
+localparam ENTER_PASSWORD  = 3'b010;
+localparam SUCCESS         = 3'b011;
+localparam FAILURE         = 3'b100;
+localparam DONE            = 3'b101;
+reg [2:0] current_state, next_state;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n)
+        current_state <= IDLE;  // Reset to IDLE state
+    else
+        current_state <= next_state;  // Move to the next state
+end
+always @(*) begin
+    // Default output values
+    access_granted = 0;
+    access_denied = 0;
+
+    case (current_state)
+        IDLE: begin
+            if (card_swipe)
+                next_state = CARD_SWIPED;  // Move to CARD_SWIPE if card is swiped
+            else
+                next_state = IDLE;          // Stay in IDLE
+        end
+
+        CARD_SWIPE: begin
+            next_state = ENTER_PASSWORD; // Go to ENTER_PASSWORD state
+        end
+
+        ENTER_PASSWORD: begin
+            if (password_entered)
+                next_state = SUCCESS;  // Move to SUCCESS if password is entered
+            else
+                next_state = ENTER_PASSWORD; // Stay in ENTER_PASSWORD
+        end
+
+        SUCCESS: begin
+            access_granted = 1;  // Grant access
+            next_state = DONE;   // Move to DONE
+        end
+
+        FAILURE: begin
+            access_denied = 1;  // Deny access (Not actively used here)
+            next_state = DONE;  // Move to DONE
+        end
+
+        DONE: begin
+            next_state = IDLE;  // Reset back to IDLE
+        end
+
+        default: next_state = IDLE; // Default to IDLE state
+    endcase
+end
+
